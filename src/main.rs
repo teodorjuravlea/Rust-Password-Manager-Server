@@ -1,6 +1,6 @@
-use crate::test::test;
+pub mod tests;
 
-pub mod test;
+use tests::test::test;
 
 #[tokio::main]
 async fn main() {
