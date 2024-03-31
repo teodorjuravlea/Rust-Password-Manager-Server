@@ -1,20 +1,22 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE IF NOT EXISTS users (
-  id SERIAL PRIMARY KEY,
+  id UUID NOT NULL PRIMARY KEY DEFAULT uuid_generate_v4(),
   email VARCHAR(255) NOT NULL,
-  password VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP
+    WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP
+    WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS sessions (
-  id SERIAL PRIMARY KEY,
-  user_id SERIAL references users(id),
-  token VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+CREATE INDEX users_email ON users(email);
 
+
+-- User data
 CREATE TABLE IF NOT EXISTS passwords (
-  id SERIAL PRIMARY KEY,
-  user_id SERIAL references users(id),
+  id UUID NOT NULL PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID references users(id),
   name VARCHAR(255) UNIQUE NOT NULL,
   username VARCHAR(255),
   encrypted_password VARCHAR(255),
@@ -23,16 +25,16 @@ CREATE TABLE IF NOT EXISTS passwords (
 );
 
 CREATE TABLE IF NOT EXISTS notes (
-  id SERIAL PRIMARY KEY,
-  user_id SERIAL references users(id),
+  id UUID NOT NULL PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID references users(id),
   name VARCHAR(255) UNIQUE NOT NULL,
   content TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS cards (
-  id SERIAL PRIMARY KEY,
-  user_id SERIAL references users(id),
+  id UUID NOT NULL PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID references users(id),
   name VARCHAR(255) UNIQUE NOT NULL,
   cardholder_name VARCHAR(255) NOT NULL,
   number VARCHAR(255) NOT NULL,
