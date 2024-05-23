@@ -17,6 +17,17 @@ pub struct TokenClaims {
     pub exp: usize,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EncryptedDataEntry {
+    pub user_id: uuid::Uuid,
+    pub name: String,
+    pub content: String,
+    pub content_type: String,
+    pub created_at: Option<DateTime<Utc>>,
+    pub updated_at: Option<DateTime<Utc>>,
+}
+
+// Request structures
 #[derive(Debug, Deserialize)]
 pub struct LoginRequest {
     pub email: String,
@@ -27,6 +38,27 @@ pub struct LoginRequest {
 pub struct RegisterRequest {
     pub email: String,
     pub password: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AddEncryptedDataEntryRequest {
+    pub name: String,
+    pub content: String,
+    pub content_type: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateEncryptedDataEntryRequest {
+    pub content_type: String,
+    pub old_name: String,
+    pub new_name: String,
+    pub new_content: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct DeleteEncryptedDataEntryRequest {
+    pub name: String,
+    pub content_type: String,
 }
 
 // Response structures
@@ -44,6 +76,6 @@ pub struct UserData {
 
 #[derive(Debug, Serialize)]
 pub struct UserResponse {
-    pub data: UserData,
     pub status: String,
+    pub data: UserData,
 }

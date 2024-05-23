@@ -97,5 +97,7 @@ pub async fn auth_middleware(
 
     // Add user to request
     req.extensions_mut().insert(user);
+
+    // Call next handler
     Ok(next.run(req).await)
 }

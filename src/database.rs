@@ -1,4 +1,4 @@
-use crate::model::User;
+use crate::model::{EncryptedDataEntry, User};
 
 pub async fn get_user_by_id(
     user_id: uuid::Uuid,
@@ -40,5 +40,88 @@ pub async fn create_user(
         password_hash,
     )
     .fetch_one(db)
+    .await
+}
+
+/*pub async fn get_all_encrypted_data_entries_by_user_id(
+    user_id: uuid::Uuid,
+    db: &sqlx::PgPool,
+) -> Result<Vec<EncryptedDataEntry>, sqlx::Error> {
+    sqlx::query_as!(
+        EncryptedDataEntry,
+        "SELECT * FROM encrypted_data_entries WHERE user_id = $1",
+        user_id
+    )
+    .fetch_all(db)
+    .await
+}*/
+
+pub async fn add_encrypted_data_entry(
+    user_id: uuid::Uuid,
+    name: &str,
+    content: &str,
+    content_type: &str,
+    db: &sqlx::PgPool,
+) -> Result<EncryptedDataEntry, sqlx::Error> {
+    sqlx::query_as!(
+        EncryptedDataEntry,
+        "INSERT INTO encrypted_data_entries (user_id, name, content, content_type) VALUES ($1, $2, $3, $4) RETURNING *",
+        user_id,
+        name,
+        content,
+        content_type,
+    )
+    .fetch_one(db)
+    .await
+}
+
+pub async fn update_encrypted_data_entry(
+    user_id: uuid::Uuid,
+    content_type: &str,
+    old_name: &str,
+    new_name: &str,
+    new_content: &str,
+    db: &sqlx::PgPool,
+) -> Result<EncryptedDataEntry, sqlx::Error> {
+    sqlx::query_as!(
+        EncryptedDataEntry,
+        "UPDATE encrypted_data_entries SET name = $1, content = $2, updated_at = NOW() WHERE user_id = $3 AND name = $4 AND content_type = $5 RETURNING *",
+        new_name,
+        new_content,
+        user_id,
+        old_name,
+        content_type,
+    )
+    .fetch_one(db)
+    .await
+}
+
+pub async fn delete_encrypted_data_entry(
+    user_id: uuid::Uuid,
+    name: &str,
+    content_type: &str,
+    db: &sqlx::PgPool,
+) -> Result<EncryptedDataEntry, sqlx::Error> {
+    sqlx::query_as!(
+        EncryptedDataEntry,
+        "DELETE FROM encrypted_data_entries WHERE user_id = $1 AND name = $2 AND content_type = $3 RETURNING *",
+        user_id,
+        name,
+        content_type,
+    )
+    .fetch_one(db)
+    .await
+}
+
+pub async fn get_all_encrypted_data_entries_by_user_id(
+    user_id: uuid::Uuid,
+    db: &sqlx::PgPool,
+) -> Result<Vec<EncryptedDataEntry>, sqlx::Error> {
+    sqlx::query_as!(
+        EncryptedDataEntry,
+        "SELECT * FROM encrypted_data_entries WHERE user_id = $1",
+        user_id
+    )
+    .fetch_all(db)
     .await
 }

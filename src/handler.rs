@@ -10,8 +10,15 @@ use serde_json::json;
 use std::sync::Arc;
 
 use crate::{
-    database::{check_user_exists_by_email, create_user, get_user_by_email},
-    model::{FilteredUser, LoginRequest, RegisterRequest, TokenClaims, User},
+    database::{
+        add_encrypted_data_entry, check_user_exists_by_email, create_user,
+        delete_encrypted_data_entry, get_all_encrypted_data_entries_by_user_id, get_user_by_email,
+        update_encrypted_data_entry,
+    },
+    model::{
+        AddEncryptedDataEntryRequest, DeleteEncryptedDataEntryRequest, FilteredUser, LoginRequest,
+        RegisterRequest, TokenClaims, UpdateEncryptedDataEntryRequest, User,
+    },
     utils::{self, is_password_valid},
     AppState,
 };
@@ -36,6 +43,8 @@ pub async fn register_user_handler(
     State(data): State<Arc<AppState>>,
     Json(body): Json<RegisterRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    println!("Registering user: {:?}", body);
+
     // Check if user already exists
     let user_exists: Option<bool> = check_user_exists_by_email(&body.email, &data.db)
         .await
@@ -53,6 +62,8 @@ pub async fn register_user_handler(
                 "status": "error",
                 "message": "User already exists",
             });
+
+            println!("User already exists: {:?}", json_error);
 
             return Err((StatusCode::CONFLICT, Json(json_error)));
         }
@@ -85,6 +96,8 @@ pub async fn register_user_handler(
         "status": "success",
         "data": filter_user(user),
     });
+
+    println!("User created: {:?}", user_response);
 
     Ok(Json(user_response))
 }
@@ -147,6 +160,8 @@ pub async fn login_user_handler(
         .headers_mut()
         .insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
 
+    println!("User logged in: {:?}", response);
+
     Ok(response)
 }
 
@@ -154,7 +169,7 @@ pub async fn logout_user_handler(
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let cookie = Cookie::build(("token", ""))
         .path("/")
-        .max_age(time::Duration::hours(1))
+        .max_age(time::Duration::hours(-1))
         .same_site(SameSite::Lax)
         .http_only(true);
 
@@ -163,6 +178,8 @@ pub async fn logout_user_handler(
     response
         .headers_mut()
         .insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
+
+    println!("User logged out: {:?}", response);
 
     Ok(response)
 }
@@ -176,6 +193,129 @@ pub async fn get_user_handler(
             "user": filter_user(user),
         })
     });
+
+    println!("User retrieved: {:?}", json_response);
+
+    Ok(Json(json_response))
+}
+
+pub async fn add_encrypted_data_entry_handler(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<User>,
+    Json(body): Json<AddEncryptedDataEntryRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let encrypted_data_entry = add_encrypted_data_entry(
+        user.id,
+        &body.name,
+        &body.content,
+        &body.content_type,
+        &data.db,
+    )
+    .await
+    .map_err(|e| {
+        let json_error = serde_json::json!({
+            "status": "error",
+            "message": format!("Error adding encrypted data entry: {}", e),
+        });
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json_error))
+    })?;
+
+    let json_response = serde_json::json!({
+        "status": "success",
+        "data": serde_json::json!({
+            "encrypted_data_entry": encrypted_data_entry,
+        })
+    });
+
+    println!("Encrypted data entry added: {:?}", json_response);
+
+    Ok(Json(json_response))
+}
+
+pub async fn update_encrypted_data_entry_handler(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<User>,
+    Json(body): Json<UpdateEncryptedDataEntryRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let encrypted_data_entry = update_encrypted_data_entry(
+        user.id,
+        &body.content_type,
+        &body.old_name,
+        &body.new_name,
+        &body.new_content,
+        &data.db,
+    )
+    .await
+    .map_err(|e| {
+        let json_error = serde_json::json!({
+            "status": "error",
+            "message": format!("Error updating encrypted data entry: {}", e),
+        });
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json_error))
+    })?;
+
+    let json_response = serde_json::json!({
+        "status": "success",
+        "data": serde_json::json!({
+            "encrypted_data_entry": encrypted_data_entry,
+        })
+    });
+
+    println!("Encrypted data entry updated: {:?}", json_response);
+
+    Ok(Json(json_response))
+}
+
+pub async fn delete_encrypted_data_entry_handler(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<User>,
+    Json(body): Json<DeleteEncryptedDataEntryRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let encrypted_data_entry =
+        delete_encrypted_data_entry(user.id, &body.name, &body.content_type, &data.db)
+            .await
+            .map_err(|e| {
+                let json_error = serde_json::json!({
+                    "status": "error",
+                    "message": format!("Error deleting encrypted data entry: {}", e),
+                });
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(json_error))
+            })?;
+
+    let json_response = serde_json::json!({
+        "status": "success",
+        "data": serde_json::json!({
+            "encrypted_data_entry": encrypted_data_entry,
+        })
+    });
+
+    println!("Encrypted data entry deleted: {:?}", json_response);
+
+    Ok(Json(json_response))
+}
+
+pub async fn get_all_encrypted_data_entries_handler(
+    State(data): State<Arc<AppState>>,
+    Extension(user): Extension<User>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let encrypted_data_entries = get_all_encrypted_data_entries_by_user_id(user.id, &data.db)
+        .await
+        .map_err(|e| {
+            let json_error = serde_json::json!({
+                "status": "error",
+                "message": format!("Error fetching encrypted data entries: {}", e),
+            });
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json_error))
+        })?;
+
+    let json_response = serde_json::json!({
+        "status": "success",
+        "data": serde_json::json!({
+            "encrypted_data_entries": encrypted_data_entries,
+        })
+    });
+
+    println!("Encrypted data entries retrieved: {:?}", json_response);
 
     Ok(Json(json_response))
 }

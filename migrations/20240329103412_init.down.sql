@@ -1,4 +1,2 @@
-DROP TABLE IF EXISTS passwords;
-DROP TABLE IF EXISTS notes;
-DROP TABLE IF EXISTS cards;
+DROP TABLE IF EXISTS encrypted_data_entries;
 DROP TABLE IF EXISTS users;
