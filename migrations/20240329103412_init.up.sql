@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS encrypted_data_entries (
   user_id UUID NOT NULL references users(id),
   name VARCHAR(255) UNIQUE NOT NULL,
   content_type VARCHAR(255) NOT NULL,
-  content TEXT NOT NULL,
+  content BYTEA NOT NULL,
+  nonce BYTEA NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   PRIMARY KEY (user_id, name, content_type)

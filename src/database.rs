@@ -59,16 +59,18 @@ pub async fn create_user(
 pub async fn add_encrypted_data_entry(
     user_id: uuid::Uuid,
     name: &str,
-    content: &str,
+    content: &[u8],
+    nonce: &[u8],
     content_type: &str,
     db: &sqlx::PgPool,
 ) -> Result<EncryptedDataEntry, sqlx::Error> {
     sqlx::query_as!(
         EncryptedDataEntry,
-        "INSERT INTO encrypted_data_entries (user_id, name, content, content_type) VALUES ($1, $2, $3, $4) RETURNING *",
+        "INSERT INTO encrypted_data_entries (user_id, name, content, nonce, content_type) VALUES ($1, $2, $3, $4, $5) RETURNING *",
         user_id,
         name,
         content,
+        nonce,
         content_type,
     )
     .fetch_one(db)
@@ -80,14 +82,16 @@ pub async fn update_encrypted_data_entry(
     content_type: &str,
     old_name: &str,
     new_name: &str,
-    new_content: &str,
+    new_content: &[u8],
+    new_nonce: &[u8],
     db: &sqlx::PgPool,
 ) -> Result<EncryptedDataEntry, sqlx::Error> {
     sqlx::query_as!(
         EncryptedDataEntry,
-        "UPDATE encrypted_data_entries SET name = $1, content = $2, updated_at = NOW() WHERE user_id = $3 AND name = $4 AND content_type = $5 RETURNING *",
+        "UPDATE encrypted_data_entries SET name = $1, content = $2, nonce = $3, updated_at = NOW() WHERE user_id = $4 AND name = $5 AND content_type = $6 RETURNING *",
         new_name,
         new_content,
+        new_nonce,
         user_id,
         old_name,
         content_type,

@@ -1,6 +1,9 @@
 use axum::{
     extract::State,
-    http::{header, Response, StatusCode},
+    http::{
+        header::{self},
+        Response, StatusCode,
+    },
     response::IntoResponse,
     Extension, Json,
 };
@@ -16,8 +19,9 @@ use crate::{
         update_encrypted_data_entry,
     },
     model::{
-        AddEncryptedDataEntryRequest, DeleteEncryptedDataEntryRequest, FilteredUser, LoginRequest,
-        RegisterRequest, TokenClaims, UpdateEncryptedDataEntryRequest, User,
+        AddEncryptedDataEntryRequest, DeleteEncryptedDataEntryRequest, EncryptedDataEntryResponse,
+        FilteredUser, GetAllEncryptedDataEntriesResponse, LoginRequest, RegisterRequest,
+        TokenClaims, UpdateEncryptedDataEntryRequest, User, UserResponse,
     },
     utils::{self, is_password_valid},
     AppState,
@@ -92,10 +96,10 @@ pub async fn register_user_handler(
         })?;
 
     // Return user response
-    let user_response = serde_json::json!({
-        "status": "success",
-        "data": filter_user(user),
-    });
+    let user_response = UserResponse {
+        status: "success".to_owned(),
+        data: filter_user(user),
+    };
 
     println!("User created: {:?}", user_response);
 
@@ -154,7 +158,8 @@ pub async fn login_user_handler(
         .same_site(SameSite::Lax)
         .http_only(true);
 
-    let mut response = Response::new(json!({"status": "success", "token": token}).to_string());
+    let mut response =
+        Response::new(json!({"status": "success", "data": {"token": token}}).to_string());
 
     response
         .headers_mut()
@@ -187,16 +192,14 @@ pub async fn logout_user_handler(
 pub async fn get_user_handler(
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let json_response = serde_json::json!({
-        "status": "success",
-        "data": serde_json::json!({
-            "user": filter_user(user),
-        })
-    });
+    let user_response = UserResponse {
+        status: "success".to_owned(),
+        data: filter_user(user),
+    };
 
-    println!("User retrieved: {:?}", json_response);
+    println!("User retrieved: {:?}", user_response);
 
-    Ok(Json(json_response))
+    Ok(Json(user_response))
 }
 
 pub async fn add_encrypted_data_entry_handler(
@@ -208,6 +211,7 @@ pub async fn add_encrypted_data_entry_handler(
         user.id,
         &body.name,
         &body.content,
+        &body.nonce,
         &body.content_type,
         &data.db,
     )
@@ -220,16 +224,17 @@ pub async fn add_encrypted_data_entry_handler(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(json_error))
     })?;
 
-    let json_response = serde_json::json!({
-        "status": "success",
-        "data": serde_json::json!({
-            "encrypted_data_entry": encrypted_data_entry,
-        })
-    });
+    let encrypted_data_entry_response = EncryptedDataEntryResponse {
+        status: "success".to_owned(),
+        data: encrypted_data_entry,
+    };
 
-    println!("Encrypted data entry added: {:?}", json_response);
+    println!(
+        "Added encrypted data entry: {:?}",
+        encrypted_data_entry_response
+    );
 
-    Ok(Json(json_response))
+    Ok(Json(encrypted_data_entry_response))
 }
 
 pub async fn update_encrypted_data_entry_handler(
@@ -243,6 +248,7 @@ pub async fn update_encrypted_data_entry_handler(
         &body.old_name,
         &body.new_name,
         &body.new_content,
+        &body.new_nonce,
         &data.db,
     )
     .await
@@ -254,16 +260,17 @@ pub async fn update_encrypted_data_entry_handler(
         (StatusCode::INTERNAL_SERVER_ERROR, Json(json_error))
     })?;
 
-    let json_response = serde_json::json!({
-        "status": "success",
-        "data": serde_json::json!({
-            "encrypted_data_entry": encrypted_data_entry,
-        })
-    });
+    let encrypted_data_entry_response = EncryptedDataEntryResponse {
+        status: "success".to_owned(),
+        data: encrypted_data_entry,
+    };
 
-    println!("Encrypted data entry updated: {:?}", json_response);
+    println!(
+        "Updated encrypted data entry: {:?}",
+        encrypted_data_entry_response
+    );
 
-    Ok(Json(json_response))
+    Ok(Json(encrypted_data_entry_response))
 }
 
 pub async fn delete_encrypted_data_entry_handler(
@@ -284,12 +291,9 @@ pub async fn delete_encrypted_data_entry_handler(
 
     let json_response = serde_json::json!({
         "status": "success",
-        "data": serde_json::json!({
-            "encrypted_data_entry": encrypted_data_entry,
-        })
     });
 
-    println!("Encrypted data entry deleted: {:?}", json_response);
+    println!("Encrypted data entry deleted: {:?}", encrypted_data_entry);
 
     Ok(Json(json_response))
 }
@@ -308,14 +312,15 @@ pub async fn get_all_encrypted_data_entries_handler(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(json_error))
         })?;
 
-    let json_response = serde_json::json!({
-        "status": "success",
-        "data": serde_json::json!({
-            "encrypted_data_entries": encrypted_data_entries,
-        })
-    });
+    let get_all_encrypted_data_entries_response = GetAllEncryptedDataEntriesResponse {
+        status: "success".to_owned(),
+        data: encrypted_data_entries,
+    };
 
-    println!("Encrypted data entries retrieved: {:?}", json_response);
+    println!(
+        "Fetched all encrypted data entries: {:?}",
+        get_all_encrypted_data_entries_response
+    );
 
-    Ok(Json(json_response))
+    Ok(Json(get_all_encrypted_data_entries_response))
 }
