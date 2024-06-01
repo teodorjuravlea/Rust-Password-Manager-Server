@@ -150,7 +150,13 @@ pub async fn login_user_handler(
         &claims,
         &EncodingKey::from_secret(data.config.jwt_secret.as_ref()),
     )
-    .unwrap();
+    .map_err(|e| {
+        let json_error = serde_json::json!({
+            "status": "error",
+            "message": format!("Error creating JWT: {}", e),
+        });
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json_error))
+    })?;
 
     let cookie = Cookie::build(("token", token.to_owned()))
         .path("/")
@@ -158,12 +164,18 @@ pub async fn login_user_handler(
         .same_site(SameSite::Lax)
         .http_only(true);
 
-    let mut response =
-        Response::new(json!({"status": "success", "data": {"token": token}}).to_string());
+    let mut response = Response::new(json!({"status": "success"}).to_string());
 
-    response
-        .headers_mut()
-        .insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
+    response.headers_mut().insert(
+        header::SET_COOKIE,
+        cookie.to_string().parse().map_err(|e| {
+            let json_error = serde_json::json!({
+                "status": "error",
+                "message": format!("Error setting cookie: {}", e),
+            });
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json_error))
+        })?,
+    );
 
     println!("User logged in: {:?}", response);
 
@@ -180,9 +192,16 @@ pub async fn logout_user_handler(
 
     let mut response = Response::new(json!({"status": "success"}).to_string());
 
-    response
-        .headers_mut()
-        .insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
+    response.headers_mut().insert(
+        header::SET_COOKIE,
+        cookie.to_string().parse().map_err(|e| {
+            let json_error = serde_json::json!({
+                "status": "error",
+                "message": format!("Error setting cookie: {}", e),
+            });
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json_error))
+        })?,
+    );
 
     println!("User logged out: {:?}", response);
 
