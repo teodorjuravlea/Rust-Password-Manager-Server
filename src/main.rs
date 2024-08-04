@@ -23,7 +23,7 @@ pub struct AppState {
     config: Config,
 }
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread")]
 async fn main() {
     // Load config from environment variables
     dotenv().ok();

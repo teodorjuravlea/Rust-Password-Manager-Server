@@ -43,19 +43,6 @@ pub async fn create_user(
     .await
 }
 
-/*pub async fn get_all_encrypted_data_entries_by_user_id(
-    user_id: uuid::Uuid,
-    db: &sqlx::PgPool,
-) -> Result<Vec<EncryptedDataEntry>, sqlx::Error> {
-    sqlx::query_as!(
-        EncryptedDataEntry,
-        "SELECT * FROM encrypted_data_entries WHERE user_id = $1",
-        user_id
-    )
-    .fetch_all(db)
-    .await
-}*/
-
 pub async fn add_encrypted_data_entry(
     user_id: uuid::Uuid,
     name: &str,
