@@ -1,4 +1,5 @@
 # Rust Password Manager Server, built with Axum.
+To be used with [this client application](https://github.com/teodorjuravlea/Rust-Password-Manager-Client).
 
 Config environment variables:
 
